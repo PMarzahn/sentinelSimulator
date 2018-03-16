@@ -47,7 +47,8 @@ def canopyRTOptical(state, geom, resln=1.0):
     # set up nadim command line
     cmd = "semiDiscrete"
     if state.lai != None:
-        cmd = cmd + " -LAI %f " % state.lai
+        cmd = cmd + " -LAI %f -hc %f -rsl1 %f" %(state.lai, state.can_height, 0.2*(1.-0.5*(state.soil_moisture/100.)))
+        # CHANGE SOIL MOISTURE IMPLEMENTATION HERE, SHOULD BE IN M3 M-3 NOT KG M-2!!!!!
     cmd = cmd + " < %s" % temp_path
 
     # run process
@@ -65,6 +66,45 @@ def canopyRTOptical(state, geom, resln=1.0):
         spect.refl = copy(reflTmp)
 
     return spect
+
+
+def canopyRTOptical_fast(state, geom, mode='fast'):
+    """A python wrapper to the SemiDiscrete optical
+    canopy RT model of Nadine Gobron. Runs the
+    model for the the whole of its valid spectra
+    range at a resolution set by resln.
+
+    :param state: Instance of the stateVector class.
+    :type state: instance
+    :param geom: Instance of the sensorGeomety class.
+    :type geom: instance
+    :param mode: Run semiDiscrete in either fast ('fast') or slow ('slow') mode [optional].
+    :type resln: str
+    :return: Instance of the spectra class.
+    :rtype: instance
+    """
+
+    # generate a tmp file and write geometry into it
+    fd, temp_path = mkstemp(prefix='/tmp/senSyntmp__', text=True)
+    tmpFile = os.fdopen(fd, 'w')
+    print >> tmpFile, "%s %s %s %s" %(geom.vza,geom.vaa,geom.sza,geom.saa)
+    tmpFile.close()
+
+    # set up nadim command line
+    if mode == 'fast':
+        cmd = "semiD -srf ../srfData/s2a.srf -fast"
+    else:
+        cmd = "semiD -srf ../srfData/s2a.srf"
+    if state.lai != None:
+        cmd = cmd + " -LAI %f -hc %f -rsl1 %f" %(state.lai, state.can_height, 0.2*(1.-0.5*(state.soil_moisture/100.)))
+        # Think about soil moisture implementation here
+    cmd = cmd + " < %s" % temp_path
+
+    # run process
+    p = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=sys.stderr, shell=True)
+    out = p.stdout.readlines()
+    p.wait()
+    return np.array([float(val) for val in out[0].split()])
 
 
 if __name__ == "__main__":

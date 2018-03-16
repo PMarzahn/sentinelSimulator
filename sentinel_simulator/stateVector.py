@@ -1,6 +1,7 @@
 import netCDF4 as nc
 import datetime as dt
 import numpy as np
+import pandas as pd
 
 
 class stateVector:
@@ -21,6 +22,7 @@ class stateVector:
 
 def get_jules_state(date_utc, nc_file='jules/output/wallerfing_79_12.3_hourly.nc'):
     """Function that returns a stateVector instance for a given time.
+
     :param date_utc: datetime object of when to extract JULES output.
     :type date_utc: object
     :param nc_file: JULES output file from which to extract data.
@@ -41,6 +43,12 @@ def get_jules_state(date_utc, nc_file='jules/output/wallerfing_79_12.3_hourly.nc
 
 def nearest(items, pivot):
     return min(items, key=lambda x: abs(x - pivot))
+
+
+def get_date_list(year, month=1, days=365):
+    start_date = dt.datetime(year, month, 1, 12, 0)
+    date_list = pd.date_range(start_date, periods=days).tolist()
+    return date_list
 
 
 def read(file_format='jules', file_str=None, year=None):
